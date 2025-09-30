@@ -8,7 +8,7 @@
 
 ## 📖 Deskripsi Proyek
 
-Pusat Informasi Gempa Bumi adalah aplikasi web interaktif yang menyajikan data gempa bumi terkini di wilayah Indonesia secara *real-time*. Proyek ini dibangun sebagai portofolio untuk menunjukkan kemampuan dalam pengembangan aplikasi data, mulai dari pengambilan data melalui API, pengolahan, visualisasi, hingga deployment aplikasi.
+Pusat Informasi Gempa Bumi di sini secara sederhana saya maksudkan sebagai aplikasi web interaktif yang menyajikan data gempa bumi terkini di wilayah Indonesia secara *real-time*. Proyek ini dibangun sebagai portofolio untuk menunjukkan kemampuan dalam pengembangan aplikasi data, mulai dari pengambilan data melalui API, pengolahan, visualisasi, hingga deployment aplikasi.
 
 Aplikasi ini terhubung langsung ke **API publik dari Badan Meteorologi, Klimatologi, dan Geofisika (BMKG)**, memastikan data yang ditampilkan selalu akurat dan terbaru.
 
@@ -78,7 +78,7 @@ Aplikasi ini terhubung langsung ke **API publik dari Badan Meteorologi, Klimatol
     streamlit run app.py
     ```
 
-## 👤 Author
+## 👤 Author Aplikasi
 
 - **Nama:** Adam Dorman
 - **Institusi:** Mahasiswa S1 Sistem Informasi, UPN Veteran Jakarta (Angkatan 2024)
