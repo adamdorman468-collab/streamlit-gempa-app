@@ -3,7 +3,6 @@
 **LIVE DEMO APLIKASI:** [https://adamdorman-gempa.streamlit.app/](https://adamdorman-gempa.streamlit.app/)
 
 ![Screenshot Aplikasi Gempa](Gempa-bumiAdamDorman.png)
-*(Ganti link ini dengan URL screenshot aplikasi Anda yang di-upload ke GitHub)*
 
 ---
 
