@@ -83,4 +83,5 @@ Aplikasi ini terhubung langsung ke **API publik dari Badan Meteorologi, Klimatol
 - **Nama:** Adam Dorman
 - **Institusi:** Mahasiswa S1 Sistem Informasi, UPN Veteran Jakarta (Angkatan 2024)
 - **LinkedIn:** [https://www.linkedin.com/in/adamdorman68/](https://www.linkedin.com/in/adamdorman68/)
+- **Instagram** [https://www.instagram.com/adam_abu_umar?igsh=OGQ5ZDc2ODk2ZA==]
 - **GitHub:** [https://github.com/adamdorman468-collab](https://github.com/adamdorman468-collab)
