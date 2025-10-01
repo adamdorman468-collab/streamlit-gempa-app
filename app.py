@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 5.1 (Sidebar Canggih & Fitur Lengkap)
+# PUSAT INFORMASI GEMPA BUMI - Versi 5.1 
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
 # ======================================================================================
 
@@ -173,7 +173,10 @@ with st.sidebar:
     st.markdown("<span style='color:green'>🟢</span> Magnitudo < 4.0", unsafe_allow_html=True)
     st.markdown("<span style='color:orange'>🟠</span> Magnitudo 4.0 - 5.9", unsafe_allow_html=True)
     st.markdown("<span style='color:red'>🔴</span> Magnitudo ≥ 6.0", unsafe_allow_html=True)
-
+    
+    st.divider()
+    APP_VERSION = "5.1"
+    st.markdown(f"**🌋 Versi Aplikasi: {APP_VERSION}**")
 # ---------------------------------------------------------------------
 # Bagian 5: Tampilan Utama Aplikasi
 # ---------------------------------------------------------------------
@@ -268,3 +271,4 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
