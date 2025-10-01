@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 4.2
+# PUSAT INFORMASI GEMPA BUMI - Versi 4.2 (Perbaikan Stabilitas Jam)
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
 # ======================================================================================
 
@@ -11,7 +11,7 @@ from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 from datetime import datetime, timezone, timedelta
 import locale
-import streamlit.components.v1 as components 
+import streamlit.components.v1 as components
 
 # ---------------------------------------------------------------------
 # Konfigurasi halaman
@@ -53,7 +53,7 @@ def get_color_from_magnitude(magnitude):
     else:
         return 'red'
 
-# --- JAM REAL-TIME DENGAN JAVASCRIPT ---
+# --- FUNGSI JAM REAL-TIME DENGAN JAVASCRIPT (VERSI PERBAIKAN) ---
 def display_realtime_clock():
     html_code = """
         <div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';">
@@ -71,7 +71,6 @@ def display_realtime_clock():
         </div>
         
         <script>
-    components.html(html_code, height=75) # Tinggikan sedikit height untuk font yang lebih besar
             function updateTime() {
                 const wibTimeElement = document.getElementById('wib-time');
                 const utcTimeElement = document.getElementById('utc-time');
@@ -99,47 +98,38 @@ def display_realtime_clock():
             updateTime(); // Panggil sekali saat load
         </script>
     """
-    components.html(html_code, height=60)
+    components.html(html_code, height=75)
 
 
 @st.cache_data(ttl=60)
 def get_data_gempa(file_name):
+    # ... (Fungsi ini tidak diubah, sudah sangat kuat) ...
     url = f"{BMKG_API_BASE_URL}{file_name}"
     try:
         response = requests.get(url, timeout=15)
         response.raise_for_status()
         data = response.json()
-
         gempa_data_raw = data.get('Infogempa', {}).get('gempa', [])
         data_for_df = [gempa_data_raw] if isinstance(gempa_data_raw, dict) else gempa_data_raw
-
-        if not data_for_df:
-            return pd.DataFrame()
-
+        if not data_for_df: return pd.DataFrame()
         df = pd.DataFrame(data_for_df)
-
         for col in ALL_COLUMNS:
-            if col not in df.columns:
-                df[col] = pd.NA
-
+            if col not in df.columns: df[col] = pd.NA
         df['DateTime'] = pd.to_datetime(df['DateTime'], errors='coerce')
         coords = df['Coordinates'].fillna('').astype(str).str.split(',', n=1, expand=True)
         df['Latitude'] = pd.to_numeric(coords[0], errors='coerce')
         df['Longitude'] = pd.to_numeric(coords[1], errors='coerce')
         df['Magnitude'] = pd.to_numeric(df['Magnitude'], errors='coerce')
         df['KedalamanValue'] = pd.to_numeric(df['Kedalaman'].astype(str).str.extract(r'(\d+\.?\d*)')[0], errors='coerce')
-
         if 'Tanggal' not in df.columns or df['Tanggal'].isna().all():
             df['Tanggal'] = df['DateTime'].dt.strftime('%Y-%m-%d')
         if 'Jam' not in df.columns or df['Jam'].isna().all():
             df['Jam'] = df['DateTime'].dt.strftime('%H:%M:%S WIB')
-
         df['Waktu Kejadian'] = df['DateTime'].dt.strftime('%Y-%m-%d %H:%M:%S')
         df.dropna(subset=['DateTime', 'Latitude', 'Longitude', 'Magnitude'], inplace=True)
         df.sort_values('DateTime', ascending=False, inplace=True)
         df.reset_index(drop=True, inplace=True)
         return df
-
     except Exception:
         return pd.DataFrame()
 
@@ -147,12 +137,12 @@ def get_data_gempa(file_name):
 # Sidebar
 # ---------------------------------------------------------------------
 with st.sidebar:
+    # ... (Bagian ini tidak diubah) ...
     st.title("👨‍💻 Tentang Author")
     try:
         st.image("adam_dorman_profile.jpg", use_container_width=True, caption="Adam Dorman - 2025")
     except Exception:
         st.write("_Gambar profil tidak ditemukan (adam_dorman_profile.jpg)_")
-
     st.markdown("""
     **Adam Dorman** Mahasiswa S1 Sistem Informasi, UPN Veteran Jakarta Angkatan 2024
     - [LinkedIn](https://www.linkedin.com/in/adamdorman68/) 
@@ -161,17 +151,14 @@ with st.sidebar:
     """)
     st.divider()
     st.title("⚙️ Kontrol & Pengaturan")
-
     selected_data_name = st.selectbox("Pilih Sumber Data:", options=list(DATA_SOURCES.keys()))
     selected_file_name = DATA_SOURCES[selected_data_name]
-
     if st.button("🔄 Refresh Data"):
         try:
             st.cache_data.clear()
         except Exception:
             pass
         st.rerun()
-
     st.info(f"Data terakhir di-cache: {datetime.now(timezone(timedelta(hours=7))).strftime('%H:%M:%S WIB')}")
     st.divider()
     APP_VERSION = "4.2"
@@ -281,6 +268,3 @@ else:
         with data_col:
             st.subheader("Data Detail")
             st.dataframe(df_filtered[['Waktu Kejadian', 'Magnitude', 'Kedalaman', 'Wilayah', 'Potensi']])
-
-
-
