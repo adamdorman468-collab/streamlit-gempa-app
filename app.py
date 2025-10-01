@@ -55,19 +55,25 @@ def get_color_from_magnitude(magnitude):
 
 # --- JAM REAL-TIME DENGAN JAVASCRIPT ---
 def display_realtime_clock():
-    """Membuat komponen HTML untuk jam digital yang berjalan di browser."""
     html_code = """
-        <div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'sans serif';">
+        <div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';">
+            
             <div style="text-align: center;">
-                <span style="font-size: 0.8rem; color: #808495;">WIB</span>
-                <h2 id="wib-time" style="margin: 0; color: #FAFAFA;">--:--:--</h2>
+                <span style="font-size: 1rem; color: #A0A0A0;">WIB</span>
+                <h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2>
             </div>
+            
             <div style="text-align: center;">
-                <span style="font-size: 0.8rem; color: #808495;">UTC</span>
-                <h2 id="utc-time" style="margin: 0; color: #FAFAFA;">--:--:--</h2>
+                <span style="font-size: 1rem; color: #A0A0A0;">UTC</span>
+                <h2 id="utc-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2>
             </div>
+            
         </div>
+        
         <script>
+        </script>
+    """
+    components.html(html_code, height=75) # Tinggikan sedikit height untuk font yang lebih besar
             function updateTime() {
                 const wibTimeElement = document.getElementById('wib-time');
                 const utcTimeElement = document.getElementById('utc-time');
@@ -277,3 +283,4 @@ else:
         with data_col:
             st.subheader("Data Detail")
             st.dataframe(df_filtered[['Waktu Kejadian', 'Magnitude', 'Kedalaman', 'Wilayah', 'Potensi']])
+
