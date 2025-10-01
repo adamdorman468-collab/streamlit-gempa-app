@@ -121,11 +121,13 @@ def get_data_gempa(file_name):
 # ---------------------------------------------------------------------
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
-    st.image("adam_dorman_profile.jpg", use_column_width=True, caption="Adam Dorman")
+    st.image("adam_dorman_profile.jpg", use_container_width=True, caption="Adam Dorman")
     st.markdown("""
     **Adam Dorman**
     Mahasiswa S1 Sistem Informasi, UPN Veteran Jakarta
-    [LinkedIn](https://www.linkedin.com/in/adamdorman68/) | [Instagram](https://www.instagram.com/adam_abu_umar?igsh=OGQ5ZDc2ODk2ZA==) | [GitHub](https://github.com/adamdorman468-collab)
+    - [LinkedIn](https://www.linkedin.com/in/adamdorman68/) 
+    - [Instagram](https://www.instagram.com/adam_abu_umar?igsh=OGQ5ZDc2ODk2ZA==)  
+    - [GitHub](https://github.com/adamdorman468-collab)
     """)
     st.divider()
     st.title("⚙️ Kontrol & Pengaturan")
