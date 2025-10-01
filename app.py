@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 4.1 
+# PUSAT INFORMASI GEMPA BUMI - Versi 4.2
 # ======================================================================================
 
 import streamlit as st
@@ -38,7 +38,7 @@ DATA_SOURCES = {
 ALL_COLUMNS = ['DateTime', 'Coordinates', 'Latitude', 'Longitude', 'Magnitude', 'Kedalaman', 'Wilayah', 'Potensi', 'Dirasakan', 'Shakemap', 'Tanggal', 'Jam']
 
 # ---------------------------------------------------------------------
-# Fungsi pembantu
+# Fungsi pembantu (support)
 # ---------------------------------------------------------------------
 def get_color_from_magnitude(magnitude):
     try:
@@ -105,7 +105,7 @@ def get_data_gempa(file_name):
         return pd.DataFrame()
 
 # ---------------------------------------------------------------------
-# Sidebar
+# Sidebar aplikasi
 # ---------------------------------------------------------------------
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
@@ -302,3 +302,4 @@ utc = timezone.utc
 wib_placeholder.metric("WIB", datetime.now(wib).strftime("%H:%M:%S"))
 utc_placeholder.metric("UTC", datetime.now(utc).strftime("%H:%M:%S"))
 st.caption("Tekan tombol '🔄 Refresh Data' di sidebar untuk memperbarui data dan waktu.")
+
