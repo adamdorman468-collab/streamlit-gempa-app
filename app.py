@@ -71,7 +71,6 @@ def display_realtime_clock():
         </div>
         
         <script>
-        </script>
     """
     components.html(html_code, height=75) # Tinggikan sedikit height untuk font yang lebih besar
             function updateTime() {
@@ -283,4 +282,5 @@ else:
         with data_col:
             st.subheader("Data Detail")
             st.dataframe(df_filtered[['Waktu Kejadian', 'Magnitude', 'Kedalaman', 'Wilayah', 'Potensi']])
+
 
