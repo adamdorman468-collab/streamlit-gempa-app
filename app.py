@@ -148,20 +148,33 @@ with st.sidebar:
         ("Waktu Terbaru", "Magnitudo Terkuat", "Paling Dangkal")
     )
     
-    # --- PERBAIKAN DIMULAI DI SINI ---
-    if not df_for_filters.empty and not df_for_filters['KedalamanValue'].dropna().empty:
-        st.divider()
-        st.write("**Filter Kedalaman (km)**")
+       # --- PERBAIKAN FINAL UNTUK FILTER KEDALAMAN ---
+    st.divider()
+    st.write("**Filter Kedalaman (km)**")
+    
+    # Cek apakah data dan kolom 'KedalamanValue' ada dan berisi nilai valid
+    if not df_for_filters.empty and 'KedalamanValue' in df_for_filters.columns and df_for_filters['KedalamanValue'].notna().any():
         min_depth = int(df_for_filters['KedalamanValue'].min())
         max_depth = int(df_for_filters['KedalamanValue'].max())
-        depth_filter_values = st.slider(
-            "Saring berdasarkan kedalaman:",
-            min_value=min_depth, max_value=max_depth,
-            value=(min_depth, max_depth)
-        )
+        
+        # KASUS KRITIS: Jika semua data punya kedalaman yang sama
+        if min_depth >= max_depth:
+            st.info(f"Semua gempa memiliki kedalaman {min_depth} km. Filter nonaktif.")
+            # Buat variabel agar tidak error, tapi jangan tampilkan slider
+            depth_filter_values = (min_depth, max_depth)
+        else:
+            # Jika semua normal, tampilkan slider
+            depth_filter_values = st.slider(
+                "Saring berdasarkan kedalaman:",
+                min_value=min_depth,
+                max_value=max_depth,
+                value=(min_depth, max_depth)
+            )
     else:
-        # Jika data kosong, buat variabel default agar aplikasi tidak crash
-        depth_filter_values = (0, 700) # Nilai default mencakup semua kemungkinan kedalaman
+        # KASUS JIKA DATA KOSONG ATAU TIDAK ADA INFO KEDALAMAN
+        st.warning("Data kedalaman tidak tersedia untuk filter.")
+        # Buat variabel default agar tidak error
+        depth_filter_values = (0, 700)
     # --- PERBAIKAN SELESAI ---
     
     st.divider()
@@ -271,4 +284,5 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
 
