@@ -1,8 +1,6 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 8.0 (Pro Edition)
+# PUSAT INFORMASI GEMPA BUMI - Versi 8.1 (Clock & UI Tweak)
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
-# Fitur: State management terpusat, reset filter global, navigasi tabs,
-# layer control interaktif di peta, statistik modern, dan logika yang diperkuat.
 # ======================================================================================
 
 import streamlit as st
@@ -22,7 +20,7 @@ st.set_page_config(page_title="Pusat Informasi Gempa Indonesia", page_icon="🌋
 try:
     locale.setlocale(locale.LC_TIME, 'id_ID.UTF-8')
 except locale.Error:
-    pass # Abaikan jika lokal tidak ada
+    pass
 
 BMKG_API_BASE_URL = "https://data.bmkg.go.id/DataMKG/TEWS/"
 DATA_SOURCES = {
@@ -30,7 +28,7 @@ DATA_SOURCES = {
     "Gempa Terbaru M 5.0+": "gempaterkini.json",
     "Gempa Real-time (Otomatis)": "autogempa.json"
 }
-APP_VERSION = "8.0"
+APP_VERSION = "8.1"
 
 # ---------------------------------------------------------------------
 # Bagian 2: Fungsi Bantu
@@ -44,6 +42,40 @@ def get_color_from_magnitude(magnitude):
     except (ValueError, TypeError):
         return 'gray'
 
+def display_realtime_clock():
+    html_code = """
+        <div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';">
+            <div style="text-align: center;">
+                <span style="font-size: 1rem; color: #A0A0A0;">WIB</span>
+                <h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2>
+            </div>
+            <div style="text-align: center;">
+                <span style="font-size: 1rem; color: #A0A0A0;">UTC</span>
+                <h2 id="utc-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2>
+            </div>
+        </div>
+        <script>
+            function updateTime() {
+                const wibTimeElement = document.getElementById('wib-time');
+                const utcTimeElement = document.getElementById('utc-time');
+                if (!wibTimeElement || !utcTimeElement) return;
+                const wibDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+                const wibHours = String(wibDate.getHours()).padStart(2, '0');
+                const wibMinutes = String(wibDate.getMinutes()).padStart(2, '0');
+                const wibSeconds = String(wibDate.getSeconds()).padStart(2, '0');
+                const utcDate = new Date();
+                const utcHours = String(utcDate.getUTCHours()).padStart(2, '0');
+                const utcMinutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
+                const utcSeconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
+                wibTimeElement.innerHTML = `${wibHours}:${wibMinutes}:${wibSeconds}`;
+                utcTimeElement.innerHTML = `${utcHours}:${utcMinutes}:${utcSeconds}`;
+            }
+            setInterval(updateTime, 1000);
+            updateTime();
+        </script>
+    """
+    components.html(html_code, height=75)
+
 @st.cache_data(ttl=60)
 def get_data_gempa(file_name):
     url = f"{BMKG_API_BASE_URL}{file_name}"
@@ -55,7 +87,6 @@ def get_data_gempa(file_name):
         df = pd.DataFrame([gempa_data_raw] if isinstance(gempa_data_raw, dict) else gempa_data_raw)
         if df.empty: return pd.DataFrame()
 
-        # Pemrosesan data yang diperkuat
         df['DateTime'] = pd.to_datetime(df.get('DateTime'), errors='coerce')
         if 'Coordinates' in df.columns:
             coords = df['Coordinates'].str.split(',', expand=True)
@@ -76,44 +107,17 @@ def get_data_gempa(file_name):
     except Exception:
         return pd.DataFrame()
 
-def toast_js(message):
-    escaped_message = message.replace("'", "\\'").replace("\n", "\\n")
-    components.html(f"""
-        <script>
-        // Fungsi untuk membuat notifikasi toast
-        function createToast(message) {{
-            let toastRoot = document.getElementById('toast-root');
-            if (!toastRoot) {{
-                toastRoot = document.createElement('div');
-                toastRoot.id = 'toast-root';
-                toastRoot.style="position:fixed; top:1rem; right:1rem; z-index:99999;";
-                document.body.appendChild(toastRoot);
-            }}
-            const toast = document.createElement('div');
-            toast.innerText = message;
-            toast.style = "background:rgba(220,38,38,0.9);color:white;padding:12px 18px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.25);font-family:sans-serif;opacity:0;transform:translateY(-10px);transition:all 350ms; margin-top: 10px;";
-            toastRoot.appendChild(toast);
-            requestAnimationFrame(() => {{
-                toast.style.opacity=1;
-                toast.style.transform='translateY(0)';
-            }});
-            setTimeout(() => {{
-                toast.style.opacity=0;
-                toast.style.transform='translateY(-10px)';
-                setTimeout(() => toast.remove(), 350);
-            }}, 6500);
-        }}
-        createToast('{escaped_message}');
-        </script>
-    """, height=0)
-
 # ---------------------------------------------------------------------
 # Bagian 3: Sidebar & Kontrol State
 # ---------------------------------------------------------------------
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
     st.image("adam_dorman_profile.jpg", use_column_width=True, caption="Adam Dorman")
-    st.markdown("[LinkedIn](https://www.linkedin.com/in/adamdorman68/) | [GitHub](https://github.com/adamdorman468-collab)")
+    st.markdown("""
+    - [LinkedIn](https://www.linkedin.com/in/adamdorman68/) 
+    - [GitHub](https://github.com/adamdorman468-collab)
+    - [Instagram](https://www.instagram.com/adam_abu_umar?igsh=OGQ5ZDc2ODk2ZA==)
+    """)
     st.divider()
     st.title("⚙️ Kontrol & Pengaturan")
     
@@ -143,12 +147,15 @@ with st.sidebar:
         else:
             st.session_state.mag_filter = (min_mag, max_mag)
 
-        min_d, max_d = int(df_for_filters['KedalamanValue'].min()), int(df_for_filters['KedalamanValue'].max())
-        if min_d < max_d:
-            st.session_state.depth_filter = st.slider("Filter Kedalaman (km)", min_d, max_d, st.session_state.get('depth_filter', (min_d, max_d)))
+        if 'KedalamanValue' in df_for_filters.columns and df_for_filters['KedalamanValue'].notna().any():
+            min_d, max_d = int(df_for_filters['KedalamanValue'].min()), int(df_for_filters['KedalamanValue'].max())
+            if min_d < max_d:
+                st.session_state.depth_filter = st.slider("Filter Kedalaman (km)", min_d, max_d, st.session_state.get('depth_filter', (min_d, max_d)))
+            else:
+                 st.session_state.depth_filter = (min_d, max_d)
         else:
-            st.session_state.depth_filter = (min_d, max_d)
-    else: # Tampilkan slider nonaktif jika data kosong
+            st.session_state.depth_filter = (0, 700)
+    else: 
         st.slider("Filter Magnitudo", 0.0, 10.0, (0.0, 10.0), 0.1, disabled=True)
         st.slider("Filter Kedalaman (km)", 0, 700, (0, 700), disabled=True)
 
@@ -160,7 +167,6 @@ with st.sidebar:
 
     st.divider()
     st.markdown("#### Opsi Peta")
-    tile_mode = st.selectbox("Tema Peta:", ("Light", "Dark"))
     use_clustering = st.checkbox("Kelompokkan gempa (clustering)", value=True)
     show_heatmap = st.checkbox("Tampilkan Heatmap", value=False)
     show_shakemap = st.checkbox("Tampilkan Shakemap BMKG", value=False)
@@ -171,8 +177,12 @@ with st.sidebar:
 # ---------------------------------------------------------------------
 # Bagian 4: Tampilan Utama
 # ---------------------------------------------------------------------
-st.title("🌋 Pusat Informasi Gempa Indonesia")
-st.caption(f"Menampilkan: **{selected_data_name}** | Sumber: [API Publik BMKG](https://data.bmkg.go.id/) | Waktu: {datetime.now(timezone(timedelta(hours=7))).strftime('%d %B %Y, %H:%M:%S WIB')}")
+header_col1, header_col2 = st.columns([2, 1])
+with header_col1:
+    st.title("🌋 Pusat Informasi Gempa Indonesia")
+    st.caption(f"Menampilkan: **{selected_data_name}** | Sumber: [API Publik BMKG](https://data.bmkg.go.id/)")
+with header_col2:
+    display_realtime_clock() # Jam otomatis dikembalikan
 st.divider()
 
 df_gempa = get_data_gempa(selected_file_name)
@@ -180,7 +190,6 @@ df_gempa = get_data_gempa(selected_file_name)
 if df_gempa.empty:
     st.error("Gagal memuat data dari BMKG atau tidak ada data saat ini. Silakan coba refresh.")
 else:
-    # Ambil nilai filter dari state dengan aman
     mag_filter_range = st.session_state.get('mag_filter', (df_gempa['Magnitude'].min(), df_gempa['Magnitude'].max()))
     depth_filter_range = st.session_state.get('depth_filter', (df_gempa['KedalamanValue'].min(), df_gempa['KedalamanValue'].max()))
 
@@ -196,29 +205,22 @@ else:
     if df_filtered.empty:
         st.warning("Tidak ada data gempa yang sesuai dengan kriteria filter Anda.")
     else:
-        # Tampilkan statistik ringkas
         stat_cols = st.columns(4)
         stat_cols[0].metric("Total Gempa (Filter)", len(df_filtered))
         stat_cols[1].metric("Magnitudo Tertinggi", f"{df_filtered['Magnitude'].max():.1f} M")
         stat_cols[2].metric("Magnitudo Rata-rata", f"{df_filtered['Magnitude'].mean():.2f} M")
         stat_cols[3].metric("Kedalaman Terdangkal", f"{int(df_filtered['KedalamanValue'].min())} km")
         
-        if df_filtered['Magnitude'].max() >= 6.0:
-            toast_js(f"PERINGATAN: Terdeteksi gempa M {df_filtered['Magnitude'].max():.1f} di {df_filtered.iloc[0]['Wilayah']}")
-
         tab1, tab2, tab3 = st.tabs(["📍 Peta Interaktif", "📑 Tabel Data Rinci", "📈 Analisis Statistik"])
 
-        with tab1: # Peta
+        with tab1:
             map_center = [df_filtered['Latitude'].mean(), df_filtered['Longitude'].mean()]
-            tile_layer = "CartoDB dark_matter" if tile_mode == "Dark" else "CartoDB positron"
-            m = folium.Map(location=map_center, zoom_start=5, tiles=tile_layer)
+            m = folium.Map(location=map_center, zoom_start=5, tiles="CartoDB positron") # Tema peta di-set ke Light
             
-            # Buat layer terpisah
             marker_group = folium.FeatureGroup(name="Gempa").add_to(m)
             heat_group = folium.FeatureGroup(name="Heatmap", show=False).add_to(m)
             shake_group = folium.FeatureGroup(name="Shakemap BMKG", show=False).add_to(m)
             
-            # Isi layer marker
             marker_target = MarkerCluster().add_to(marker_group) if use_clustering else marker_group
             for _, row in df_filtered.iterrows():
                 popup_html = f"<b>{row['Wilayah']}</b><br>M: {row['Magnitude']}<br>Kedalaman: {row.get('Kedalaman', 'N/A')}"
@@ -228,27 +230,25 @@ else:
                     icon=folium.Icon(color=get_color_from_magnitude(row['Magnitude']), icon='info-sign')
                 ).add_to(marker_target)
 
-            # Isi layer heatmap (jika diaktifkan)
             if show_heatmap:
                 heat_data = [[row['Latitude'], row['Longitude']] for _, row in df_filtered.iterrows()]
                 HeatMap(heat_data).add_to(heat_group)
 
-            # Isi layer shakemap (jika diaktifkan)
             if show_shakemap and 'ShakemapURL' in df_filtered.columns:
                 shakemap_quake = df_filtered.sort_values(by='Magnitude', ascending=False)[df_filtered['ShakemapURL'].notna()].iloc[0] if not df_filtered[df_filtered['ShakemapURL'].notna()].empty else None
                 if shakemap_quake is not None:
                     lat, lon, mag = shakemap_quake['Latitude'], shakemap_quake['Longitude'], shakemap_quake['Magnitude']
-                    delta = 0.1 * (1.8 ** mag) / 2
+                    delta = 0.1 * (1.8 ** mag) / 2 
                     bounds = [[lat - delta, lon - delta], [lat + delta, lon + delta]]
                     folium.raster_layers.ImageOverlay(image=shakemap_quake['ShakemapURL'], bounds=bounds, opacity=0.7).add_to(shake_group)
             
             folium.LayerControl().add_to(m)
             st_folium(m, width="100%", height=600, returned_objects=[])
 
-        with tab2: # Tabel
+        with tab2:
             st.dataframe(df_filtered[['DateTime', 'Magnitude', 'Kedalaman', 'Wilayah']], use_container_width=True)
 
-        with tab3: # Analisis
+        with tab3:
             st.subheader("Analisis Statistik Gempa (Hasil Filter)")
             c1, c2 = st.columns(2)
             c1.markdown("#### Distribusi Magnitudo")
@@ -258,4 +258,3 @@ else:
             c2.markdown("#### Distribusi Kedalaman (km)")
             depth_counts = pd.cut(df_filtered['KedalamanValue'], bins=[-1, 70, 300, 800], labels=["Dangkal (< 70)", "Menengah (70-300)", "Dalam (> 300)"]).value_counts().sort_index()
             st.bar_chart(depth_counts)
-
