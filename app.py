@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 5.1.2 
+# PUSAT INFORMASI GEMPA BUMI - Versi 6.0 (Heatmap & Shakemap Integration)
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
 # ======================================================================================
 
@@ -7,7 +7,7 @@ import streamlit as st
 import pandas as pd
 import requests
 import folium
-from folium.plugins import MarkerCluster
+from folium.plugins import MarkerCluster, HeatMap
 from streamlit_folium import st_folium
 from datetime import datetime, timezone, timedelta
 import locale
@@ -33,8 +33,7 @@ DATA_SOURCES = {
     "Gempa Terbaru M 5.0+": "gempaterkini.json",
     "Gempa Real-time (Otomatis)": "autogempa.json"
 }
-ALL_COLUMNS = ['DateTime', 'Coordinates', 'Latitude', 'Longitude', 'Magnitude', 'Kedalaman', 'Wilayah', 'Potensi', 'Dirasakan', 'Shakemap', 'Tanggal', 'Jam']
-APP_VERSION = "5.1.2"
+APP_VERSION = "6.0"
 
 # ---------------------------------------------------------------------
 # Bagian 2: Fungsi-fungsi Bantuan
@@ -46,16 +45,11 @@ def get_color_from_magnitude(magnitude):
     else: return 'red'
 
 def display_realtime_clock():
+    # ... (Fungsi ini tidak berubah)
     html_code = """
         <div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';">
-            <div style="text-align: center;">
-                <span style="font-size: 1rem; color: #A0A0A0;">WIB</span>
-                <h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2>
-            </div>
-            <div style="text-align: center;">
-                <span style="font-size: 1rem; color: #A0A0A0;">UTC</span>
-                <h2 id="utc-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2>
-            </div>
+            <div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">WIB</span><h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div>
+            <div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">UTC</span><h2 id="utc-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div>
         </div>
         <script>
             function updateTime() {
@@ -91,20 +85,28 @@ def get_data_gempa(file_name):
         data = response.json()
         
         gempa_data_raw = data.get('Infogempa', {}).get('gempa', [])
-        data_for_df = [gempa_data_raw] if isinstance(gempa_data_raw, dict) else gempa_data_raw
+        df = pd.DataFrame([gempa_data_raw] if isinstance(gempa_data_raw, dict) else gempa_data_raw)
+        if df.empty: return pd.DataFrame()
+
+        # Data Cleaning yang lebih tangguh
+        df['DateTime'] = pd.to_datetime(df.get('DateTime'), errors='coerce')
+        if 'Coordinates' in df.columns:
+            coords = df['Coordinates'].str.split(',', expand=True)
+            df['Latitude'] = pd.to_numeric(coords[0], errors='coerce')
+            df['Longitude'] = pd.to_numeric(coords[1], errors='coerce')
         
-        if not data_for_df: return pd.DataFrame()
+        df['Magnitude'] = pd.to_numeric(df.get('Magnitude'), errors='coerce')
+        if 'Kedalaman' in df.columns:
+            df['KedalamanValue'] = pd.to_numeric(df['Kedalaman'].astype(str).str.extract(r'(\d+)')[0], errors='coerce')
+        else:
+            df['KedalamanValue'] = 0
+
+        # --- FITUR BARU: Parsing URL Shakemap ---
+        if 'Shakemap' in df.columns:
+            df['ShakemapURL'] = df['Shakemap'].apply(lambda x: f"https://data.bmkg.go.id/DataMKG/TEWS/{x}" if isinstance(x, str) and x.endswith('.jpg') else None)
+        else:
+            df['ShakemapURL'] = None
             
-        df = pd.DataFrame(data_for_df)
-        
-        for col in ALL_COLUMNS:
-            if col not in df.columns: df[col] = pd.NA
-        
-        df['DateTime'] = pd.to_datetime(df['DateTime'], errors='coerce')
-        df[['Latitude', 'Longitude']] = df['Coordinates'].str.split(',', expand=True, n=1).astype(float)
-        df['Magnitude'] = pd.to_numeric(df['Magnitude'], errors='coerce')
-        df['KedalamanValue'] = pd.to_numeric(df['Kedalaman'].astype(str).str.extract(r'(\d+)')[0], errors='coerce')
-        
         df['Waktu Kejadian'] = df['DateTime'].dt.strftime('%Y-%m-%d %H:%M:%S')
         df.dropna(subset=['DateTime', 'Latitude', 'Longitude', 'Magnitude'], inplace=True)
         return df
@@ -117,12 +119,8 @@ def get_data_gempa(file_name):
 # ---------------------------------------------------------------------
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
-    st.image("adam_dorman_profile.jpg", use_container_width=True, caption="Adam Dorman")
-    st.markdown("""
-    **Adam Dorman**
-    Mahasiswa S1 Sistem Informasi, UPN Veteran Jakarta
-    [LinkedIn](https://www.linkedin.com/in/adamdorman68/) | [Instagram](https://www.instagram.com/adam_abu_umar?igsh=OGQ5ZDc2ODk2ZA==) | [GitHub](https://github.com/adamdorman468-collab)
-    """)
+    st.image("adam_dorman_profile.jpg", use_column_width=True, caption="Adam Dorman")
+    st.markdown("[LinkedIn](https://www.linkedin.com/in/adamdorman68/) | [GitHub](https://github.com/adamdorman468-collab)")
     st.divider()
     st.title("⚙️ Kontrol & Pengaturan")
     
@@ -138,37 +136,33 @@ with st.sidebar:
     df_for_filters = get_data_gempa(selected_file_name)
     
     st.divider()
-    sort_by = st.selectbox(
-        "Urutkan Data Tabel Berdasarkan:",
-        ("Waktu Terbaru", "Magnitudo Terkuat", "Paling Dangkal")
-    )
+    sort_by = st.selectbox( "Urutkan Data Tabel Berdasarkan:", ("Waktu Terbaru", "Magnitudo Terkuat", "Paling Dangkal"))
 
     if not df_for_filters.empty and 'KedalamanValue' in df_for_filters.columns and df_for_filters['KedalamanValue'].notna().any():
-        st.divider()
-        st.write("**Filter Kedalaman (km)**")
-        min_depth = int(df_for_filters['KedalamanValue'].min())
-        max_depth = int(df_for_filters['KedalamanValue'].max())
+        min_depth, max_depth = int(df_for_filters['KedalamanValue'].min()), int(df_for_filters['KedalamanValue'].max())
         if min_depth >= max_depth:
              depth_filter_values = (min_depth, max_depth)
         else:
-            depth_filter_values = st.slider(
-                "Saring berdasarkan kedalaman:",
-                min_value=min_depth, max_value=max_depth,
-                value=(min_depth, max_depth)
-            )
+            depth_filter_values = st.slider("Saring berdasarkan kedalaman (km):", min_value=min_depth, max_value=max_depth, value=(min_depth, max_depth))
     else:
         depth_filter_values = (0, 700) 
 
     st.divider()
-    use_clustering = st.checkbox("Kelompokkan gempa di peta (clustering)", value=True, help="Aktifkan untuk performa lebih baik saat data banyak.")
+    st.markdown("#### Opsi Peta")
+    use_clustering = st.checkbox("Kelompokkan gempa (clustering)", value=True)
+    # --- FITUR BARU: Kontrol Heatmap & Shakemap ---
+    show_heatmap = st.checkbox("Tampilkan Heatmap", value=False)
+    show_shakemap = st.checkbox("Tampilkan Shakemap BMKG (jika ada)", value=False)
+    
     st.divider()
     st.markdown("#### Informasi Tambahan")
     st.markdown("- **[Info Gempa BMKG](https://www.bmkg.go.id/gempabumi/gempabumi-dirasakan.bmkg)**")
+    st.markdown("- **[Skala MMI](https://www.bmkg.go.id/gempabumi/skala-mmi.bmkg)**") # <-- FITUR BARU
     st.markdown("---")
     st.markdown("**Legenda Warna Peta:**")
-    st.markdown("<span style='color:green'>🟢</span> Magnitudo < 4.0", unsafe_allow_html=True)
-    st.markdown("<span style='color:orange'>🟠</span> Magnitudo 4.0 - 5.9", unsafe_allow_html=True)
-    st.markdown("<span style='color:red'>🔴</span> Magnitudo ≥ 6.0", unsafe_allow_html=True)
+    st.markdown("<span style='color:green'>🟢</span> M < 4.0", unsafe_allow_html=True)
+    st.markdown("<span style='color:orange'>🟠</span> 4.0 ≤ M < 6.0", unsafe_allow_html=True)
+    st.markdown("<span style='color:red'>🔴</span> M ≥ 6.0", unsafe_allow_html=True)
 
     st.divider()
     st.markdown(f"**🌋 Versi Aplikasi: {APP_VERSION}**")
@@ -191,46 +185,33 @@ df_gempa = get_data_gempa(selected_file_name)
 if not df_gempa.empty:
     df_tampil = df_gempa.copy()
     
- 
     min_mag, max_mag = float(df_tampil['Magnitude'].min()), float(df_tampil['Magnitude'].max())
-
+    
     if min_mag >= max_mag:
-        st.info(f"Semua gempa yang ditampilkan memiliki Magnitudo {min_mag}. Filter magnitudo nonaktif.")
         mag_filter_values = (min_mag, max_mag)
-        st.session_state.pop('mag_filter', None)
     else:
-        if st.session_state.get('data_source') != selected_file_name:
-            st.session_state.pop('mag_filter', None)
-        
+        if st.session_state.get('data_source') != selected_file_name: st.session_state.pop('mag_filter', None)
         st.session_state.data_source = selected_file_name
-        
         current_filter_value = st.session_state.get('mag_filter', (min_mag, max_mag))
-
         if not (min_mag <= current_filter_value[0] <= max_mag and min_mag <= current_filter_value[1] <= max_mag):
             current_filter_value = (min_mag, max_mag)
-
+        
         filter_col1, filter_col2 = st.columns([3, 1])
         with filter_col1:
             mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
             st.session_state.mag_filter = mag_filter_values
         with filter_col2:
-            st.write("")
-            if st.button("Reset Filter"):
-                st.session_state.mag_filter = (min_mag, max_mag)
-                st.rerun()
- 
-    
+            st.write(""); 
+            if st.button("Reset Filter"): st.session_state.mag_filter = (min_mag, max_mag); st.rerun()
+
     df_filtered = df_tampil[
         (df_tampil['Magnitude'].between(*mag_filter_values)) &
         (df_tampil['KedalamanValue'].between(*depth_filter_values))
     ]
 
-    if sort_by == "Magnitudo Terkuat":
-        df_filtered = df_filtered.sort_values(by='Magnitude', ascending=False)
-    elif sort_by == "Paling Dangkal":
-        df_filtered = df_filtered.sort_values(by='KedalamanValue', ascending=True)
-    else:
-        df_filtered = df_filtered.sort_values(by='DateTime', ascending=False)
+    if sort_by == "Magnitudo Terkuat": df_filtered = df_filtered.sort_values(by='Magnitude', ascending=False)
+    elif sort_by == "Paling Dangkal": df_filtered = df_filtered.sort_values(by='KedalamanValue', ascending=True)
+    else: df_filtered = df_filtered.sort_values(by='DateTime', ascending=False)
 
     if not df_filtered.empty:
         gempa_terbaru = df_filtered.iloc[0]
@@ -241,24 +222,51 @@ if not df_gempa.empty:
             map_center = [gempa_terbaru['Latitude'], gempa_terbaru['Longitude']]
             m = folium.Map(location=map_center, zoom_start=5)
             
-            target_map = MarkerCluster().add_to(m) if use_clustering else m
+            # --- FITUR BARU: Logika Layer Peta ---
+            
+            # 1. Layer Marker (tetap ada)
+            if use_clustering:
+                marker_layer = MarkerCluster(name="Gempa (Cluster)").add_to(m)
+            else:
+                marker_layer = folium.FeatureGroup(name="Gempa").add_to(m)
 
             for _, row in df_filtered.iterrows():
-                popup_text = f"""<b>{row.get('Wilayah')}</b><br>
-                                 Magnitudo: {row.get('Magnitude')}<br>
-                                 Kedalaman: {row.get('Kedalaman')}<br><hr>
-                                 Dirasakan (MMI):<br>{row.get('Dirasakan')}"""
+                popup_text = f"<b>{row.get('Wilayah')}</b><br>M: {row.get('Magnitude')}<br>Kedalaman: {row.get('Kedalaman')}"
                 folium.Marker(
                     location=[row['Latitude'], row['Longitude']],
                     popup=popup_text,
-                    tooltip=f"Mag: {row.get('Magnitude')} - {row.get('Wilayah')}",
+                    tooltip=f"M: {row.get('Magnitude')} - {row.get('Wilayah')}",
                     icon=folium.Icon(color=get_color_from_magnitude(row['Magnitude']))
-                ).add_to(target_map)
+                ).add_to(marker_layer)
+            
+            # 2. Layer Heatmap (jika diaktifkan)
+            if show_heatmap:
+                heat_data = [[row['Latitude'], row['Longitude']] for _, row in df_filtered.iterrows()]
+                HeatMap(heat_data, name="Heatmap Kepadatan").add_to(m)
+
+            # 3. Layer Shakemap (jika diaktifkan & tersedia)
+            if show_shakemap:
+                shakemap_candidate = df_filtered[df_filtered['ShakemapURL'].notna()].iloc[0] if not df_filtered[df_filtered['ShakemapURL'].notna()].empty else None
+                if shakemap_candidate is not None:
+                    lat, lon, mag = shakemap_candidate['Latitude'], shakemap_candidate['Longitude'], shakemap_candidate['Magnitude']
+                    # Heuristik bounds yang simpel
+                    delta = 0.1 * (1.8 ** mag) / 2
+                    bounds = [[lat - delta, lon - delta], [lat + delta, lon + delta]]
+                    try:
+                        folium.raster_layers.ImageOverlay(
+                            name="Shakemap BMKG", image=shakemap_candidate['ShakemapURL'],
+                            bounds=bounds, opacity=0.7, interactive=True, cross_origin=False
+                        ).add_to(m)
+                    except Exception as e:
+                        st.warning(f"Gagal menampilkan overlay Shakemap: {e}")
+
+            # Selalu tambahkan kontrol layer
+            folium.LayerControl().add_to(m)
             
             st_folium(m, width='100%', height=500, returned_objects=[])
 
         with data_col:
-            st.subheader("Data Detail")
+            st.subheader("Data Detail Gempa")
             df_display = df_filtered.copy()
             df_display['Waktu Kejadian'] = df_display['DateTime'].dt.strftime('%d-%b, %H:%M:%S')
             st.dataframe(df_display[['Waktu Kejadian', 'Magnitude', 'Kedalaman', 'Wilayah']])
