@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 5.1.2 (Checkpoint Stabil)
+# PUSAT INFORMASI GEMPA BUMI - Versi 5.1.2 
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
 # ======================================================================================
 
@@ -142,7 +142,6 @@ with st.sidebar:
         ("Waktu Terbaru", "Magnitudo Terkuat", "Paling Dangkal")
     )
 
-    # --- FIX #1: PERBAIKAN SLIDER KEDALAMAN ---
     if not df_for_filters.empty and 'KedalamanValue' in df_for_filters.columns and df_for_filters['KedalamanValue'].notna().any():
         st.divider()
         st.write("**Filter Kedalaman (km)**")
@@ -158,7 +157,6 @@ with st.sidebar:
             )
     else:
         depth_filter_values = (0, 700) 
-    # --- AKHIR FIX #1 ---
 
     st.divider()
     use_clustering = st.checkbox("Kelompokkan gempa di peta (clustering)", value=True, help="Aktifkan untuk performa lebih baik saat data banyak.")
@@ -170,6 +168,9 @@ with st.sidebar:
     st.markdown("<span style='color:green'>🟢</span> Magnitudo < 4.0", unsafe_allow_html=True)
     st.markdown("<span style='color:orange'>🟠</span> Magnitudo 4.0 - 5.9", unsafe_allow_html=True)
     st.markdown("<span style='color:red'>🔴</span> Magnitudo ≥ 6.0", unsafe_allow_html=True)
+
+    st.divider()
+    st.markdown(f"**🌋 Versi Aplikasi: {APP_VERSION}**")
 
 # ---------------------------------------------------------------------
 # Bagian 5: Tampilan Utama Aplikasi
@@ -264,4 +265,5 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
 
