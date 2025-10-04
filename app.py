@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 5.2 (Stabil & Ditingkatkan)
+# PUSAT INFORMASI GEMPA BUMI - Versi 5.2 (Stable Future-Proof)
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
 # ======================================================================================
 
@@ -14,7 +14,7 @@ import locale
 import streamlit.components.v1 as components
 
 # ---------------------------------------------------------------------
-# Konfigurasi Halaman
+# Bagian 1: Konfigurasi Halaman & Konstanta
 # ---------------------------------------------------------------------
 st.set_page_config(
     page_title="Pusat Informasi Gempa Indonesia",
@@ -33,19 +33,21 @@ DATA_SOURCES = {
     "Gempa Terbaru M 5.0+": "gempaterkini.json",
     "Gempa Real-time (Otomatis)": "autogempa.json"
 }
-ALL_COLUMNS = ['DateTime', 'Coordinates', 'Latitude', 'Longitude', 'Magnitude',
-               'Kedalaman', 'Wilayah', 'Potensi', 'Dirasakan', 'Shakemap',
-               'Tanggal', 'Jam']
+ALL_COLUMNS = [
+    'DateTime', 'Coordinates', 'Latitude', 'Longitude',
+    'Magnitude', 'Kedalaman', 'Wilayah', 'Potensi',
+    'Dirasakan', 'Shakemap', 'Tanggal', 'Jam'
+]
 
 # ---------------------------------------------------------------------
-# Fungsi Bantuan
+# Bagian 2: Fungsi-fungsi Bantuan
 # ---------------------------------------------------------------------
 def get_color_from_magnitude(magnitude):
     if not isinstance(magnitude, (int, float)):
         return 'gray'
     if magnitude < 4.0:
         return 'green'
-    elif magnitude < 6.0:
+    elif 4.0 <= magnitude < 6.0:
         return 'orange'
     else:
         return 'red'
@@ -85,7 +87,7 @@ def display_realtime_clock():
     components.html(html_code, height=75)
 
 # ---------------------------------------------------------------------
-# Data BMKG
+# Bagian 3: Mesin Pengambilan & Pemrosesan Data
 # ---------------------------------------------------------------------
 @st.cache_data(ttl=60)
 def get_data_gempa(file_name):
@@ -96,19 +98,19 @@ def get_data_gempa(file_name):
         data = response.json()
 
         gempa_data_raw = data.get('Infogempa', {}).get('gempa', [])
-        data_for_df = [gempa_data_raw] if isinstance(gempa_data_raw, dict) else gempa_data_raw
-        if not data_for_df:
+        if isinstance(gempa_data_raw, dict):
+            gempa_data_raw = [gempa_data_raw]
+        if not gempa_data_raw:
             return pd.DataFrame()
 
-        df = pd.DataFrame(data_for_df)
+        df = pd.DataFrame(gempa_data_raw)
 
-        # Tambah kolom kosong jika tidak ada
         for col in ALL_COLUMNS:
             if col not in df.columns:
                 df[col] = pd.NA
 
-        # Parsing data
         df['DateTime'] = pd.to_datetime(df['DateTime'], errors='coerce')
+
         if 'Coordinates' in df.columns:
             coords = df['Coordinates'].str.split(',', expand=True)
             if coords.shape[1] == 2:
@@ -120,15 +122,15 @@ def get_data_gempa(file_name):
             df['Kedalaman'].astype(str).str.extract(r'(\d+)')[0], errors='coerce'
         )
 
-        df['Waktu Kejadian'] = df['DateTime'].dt.strftime('%Y-%m-%d %H:%M:%S')
         df.dropna(subset=['DateTime', 'Latitude', 'Longitude', 'Magnitude'], inplace=True)
-        return df
+        return df.reset_index(drop=True)
 
-    except Exception:
+    except Exception as e:
+        st.error(f"Gagal ambil data BMKG: {e}")
         return pd.DataFrame()
 
 # ---------------------------------------------------------------------
-# Sidebar
+# Bagian 4: Sidebar
 # ---------------------------------------------------------------------
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
@@ -136,10 +138,7 @@ with st.sidebar:
     st.markdown("""
     *Adam Dorman*  
     Mahasiswa S1 Sistem Informasi, UPN Veteran Jakarta  
-
-    [LinkedIn](https://www.linkedin.com/in/adamdorman68/) | 
-    [Instagram](https://www.instagram.com/adam_abu_umar) | 
-    [GitHub](https://github.com/adamdorman468-collab)
+    [LinkedIn](https://www.linkedin.com/in/adamdorman68/) | [Instagram](https://www.instagram.com/adam_abu_umar) | [GitHub](https://github.com/adamdorman468-collab)
     """)
     st.divider()
 
@@ -156,23 +155,33 @@ with st.sidebar:
     df_for_filters = get_data_gempa(selected_file_name)
 
     st.divider()
-    sort_by = st.selectbox("Urutkan Data:", ("Waktu Terbaru", "Magnitudo Terkuat", "Paling Dangkal"))
+    sort_by = st.selectbox("Urutkan Data Tabel Berdasarkan:", ("Waktu Terbaru", "Magnitudo Terkuat", "Paling Dangkal"))
 
-    # Filter kedalaman
-    if not df_for_filters.empty:
+    # --- Filter Kedalaman ---
+    if not df_for_filters.empty and 'KedalamanValue' in df_for_filters.columns:
         min_depth = int(df_for_filters['KedalamanValue'].min())
         max_depth = int(df_for_filters['KedalamanValue'].max())
         if min_depth == max_depth:
-            min_depth -= 1; max_depth += 1
-        depth_filter_values = st.slider("Kedalaman (km):", min_value=min_depth, max_value=max_depth,
-                                        value=(min_depth, max_depth))
+            min_depth = max(0, min_depth - 1)
+            max_depth += 1
+        depth_filter_values = st.slider("Saring berdasarkan kedalaman (km):", min_value=min_depth, max_value=max_depth, value=(min_depth, max_depth))
     else:
         depth_filter_values = (0, 700)
 
-    use_clustering = st.checkbox("Cluster gempa di peta", value=True)
+    st.divider()
+    use_clustering = st.checkbox("Kelompokkan gempa di peta (clustering)", value=True)
+    st.divider()
+
+    st.markdown("#### Informasi Tambahan")
+    st.markdown("- *[Info Gempa BMKG](https://www.bmkg.go.id/gempabumi/gempabumi-dirasakan.bmkg)*")
+    st.markdown("---")
+    st.markdown("*Legenda Warna Peta:*")
+    st.markdown("<span style='color:green'>🟢</span> Magnitudo < 4.0", unsafe_allow_html=True)
+    st.markdown("<span style='color:orange'>🟠</span> Magnitudo 4.0 - 5.9", unsafe_allow_html=True)
+    st.markdown("<span style='color:red'>🔴</span> Magnitudo ≥ 6.0", unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------
-# Main Page
+# Bagian 5: Tampilan Utama
 # ---------------------------------------------------------------------
 col1, col2 = st.columns([3, 2])
 with col1:
@@ -189,20 +198,32 @@ df_gempa = get_data_gempa(selected_file_name)
 if not df_gempa.empty:
     df_tampil = df_gempa.copy()
 
-    # Magnitudo filter
+    # --- Filter Magnitudo ---
     min_mag, max_mag = float(df_tampil['Magnitude'].min()), float(df_tampil['Magnitude'].max())
     if min_mag == max_mag:
-        min_mag -= 0.1; max_mag += 0.1
+        min_mag = max(0, min_mag - 0.1)
+        max_mag += 0.1
 
-    mag_filter_values = st.slider("Magnitudo:", min_value=min_mag, max_value=max_mag,
-                                  value=(min_mag, max_mag))
+    current_filter_value = st.session_state.get('mag_filter', (min_mag, max_mag))
+    if not (min_mag <= current_filter_value[0] <= max_mag and min_mag <= current_filter_value[1] <= max_mag):
+        current_filter_value = (min_mag, max_mag)
 
+    filter_col1, filter_col2 = st.columns([3, 1])
+    with filter_col1:
+        mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
+        st.session_state.mag_filter = mag_filter_values
+    with filter_col2:
+        st.write("")
+        if st.button("Reset Filter"):
+            st.session_state.mag_filter = (min_mag, max_mag)
+            st.rerun()
+
+    # --- Terapkan Filter ---
     df_filtered = df_tampil[
         (df_tampil['Magnitude'].between(*mag_filter_values)) &
         (df_tampil['KedalamanValue'].between(*depth_filter_values))
     ]
 
-    # Sorting
     if sort_by == "Magnitudo Terkuat":
         df_filtered = df_filtered.sort_values(by='Magnitude', ascending=False)
     elif sort_by == "Paling Dangkal":
@@ -210,7 +231,6 @@ if not df_gempa.empty:
     else:
         df_filtered = df_filtered.sort_values(by='DateTime', ascending=False)
 
-    # Output
     if not df_filtered.empty:
         gempa_terbaru = df_filtered.iloc[0]
 
@@ -225,11 +245,11 @@ if not df_gempa.empty:
                 popup_text = f"""<b>{row.get('Wilayah')}</b><br>
                                  Magnitudo: {row.get('Magnitude')}<br>
                                  Kedalaman: {row.get('Kedalaman')}<br><hr>
-                                 Dirasakan: {row.get('Dirasakan')}"""
+                                 Dirasakan:<br>{row.get('Dirasakan')}"""
                 folium.Marker(
                     location=[row['Latitude'], row['Longitude']],
                     popup=popup_text,
-                    tooltip=f"Mag {row.get('Magnitude')} - {row.get('Wilayah')}",
+                    tooltip=f"Mag: {row.get('Magnitude')} - {row.get('Wilayah')}",
                     icon=folium.Icon(color=get_color_from_magnitude(row['Magnitude']))
                 ).add_to(target_map)
 
@@ -238,9 +258,9 @@ if not df_gempa.empty:
         with data_col:
             st.subheader("Data Detail")
             df_display = df_filtered.copy()
-            df_display['Waktu Kejadian'] = df_display['DateTime'].dt.strftime('%d-%b %H:%M:%S')
+            df_display['Waktu Kejadian'] = df_display['DateTime'].dt.strftime('%d-%b, %H:%M:%S')
             st.dataframe(df_display[['Waktu Kejadian', 'Magnitude', 'Kedalaman', 'Wilayah']])
     else:
-        st.warning("⚠️ Tidak ada data sesuai filter Anda.")
+        st.warning("Tidak ada data yang sesuai filter Anda.")
 else:
-    st.error("❌ Gagal memuat data dari BMKG. Coba refresh atau pilih sumber lain.")
+    st.error("Gagal memuat data dari BMKG. Silakan refresh atau pilih sumber data lain.")
