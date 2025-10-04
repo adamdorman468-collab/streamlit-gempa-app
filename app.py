@@ -200,13 +200,11 @@ if not df_gempa.empty:
         
         filter_col1, filter_col2 = st.columns([3, 1])
         with filter_col2:
-            st.write("") 
-            if st.button("Reset Filter"):
-                st.session_state.mag_filter = (min_mag, max_mag)
-                st.rerun()
-        
+            st.write(""); 
+            if st.button("Reset Filter"): st.session_state.mag_filter = (min_mag, max_mag); st.rerun()
         with filter_col1:
-            current_filter_value = st.session_state.get('mag_filter', (min_mag, max_mag))
+            mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
+            st.session_state.mag_filter = mag_filter_values
             
     mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
     st.session_state.mag_filter = mag_filter_values
@@ -281,6 +279,7 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
 
 
 
