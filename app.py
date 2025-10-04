@@ -34,6 +34,7 @@ DATA_SOURCES = {
     "Gempa Real-time (Otomatis)": "autogempa.json"
 }
 ALL_COLUMNS = ['DateTime', 'Coordinates', 'Latitude', 'Longitude', 'Magnitude', 'Kedalaman', 'Wilayah', 'Potensi', 'Dirasakan', 'Shakemap', 'Tanggal', 'Jam']
+APP_VERSION = "5.1.2"
 
 # ---------------------------------------------------------------------
 # Bagian 2: Fungsi-fungsi Bantuan
@@ -265,5 +266,3 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
-
-
