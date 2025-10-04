@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 5.1 (Sidebar Canggih & Fitur Lengkap)
+# PUSAT INFORMASI GEMPA BUMI - Versi 5.1 (Dengan Perbaikan Stabilitas)
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
 # ======================================================================================
 
@@ -147,8 +147,9 @@ with st.sidebar:
         "Urutkan Data Tabel Berdasarkan:",
         ("Waktu Terbaru", "Magnitudo Terkuat", "Paling Dangkal")
     )
-
-    if not df_for_filters.empty:
+    
+    # --- PERBAIKAN DIMULAI DI SINI ---
+    if not df_for_filters.empty and not df_for_filters['KedalamanValue'].dropna().empty:
         st.divider()
         st.write("**Filter Kedalaman (km)**")
         min_depth = int(df_for_filters['KedalamanValue'].min())
@@ -158,6 +159,10 @@ with st.sidebar:
             min_value=min_depth, max_value=max_depth,
             value=(min_depth, max_depth)
         )
+    else:
+        # Jika data kosong, buat variabel default agar aplikasi tidak crash
+        depth_filter_values = (0, 700) # Nilai default mencakup semua kemungkinan kedalaman
+    # --- PERBAIKAN SELESAI ---
     
     st.divider()
     use_clustering = st.checkbox("Kelompokkan gempa di peta (clustering)", value=True, help="Aktifkan untuk performa lebih baik saat data banyak.")
