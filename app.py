@@ -116,7 +116,7 @@ def get_data_gempa(file_name):
 # ---------------------------------------------------------------------
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
-    st.image("adam_dorman_profile.jpg", use_column_width=True, caption="Adam Dorman")
+    st.image("adam_dorman_profile.jpg", use_container_width=True, caption="Adam Dorman")
     st.markdown("""
     **Adam Dorman**
     Mahasiswa S1 Sistem Informasi, UPN Veteran Jakarta
@@ -189,28 +189,34 @@ df_gempa = get_data_gempa(selected_file_name)
 if not df_gempa.empty:
     df_tampil = df_gempa.copy()
     
-    # --- FIX #2: PERBAIKAN LOGIKA RESET FILTER MAGNITUDO ---
+ 
     min_mag, max_mag = float(df_tampil['Magnitude'].min()), float(df_tampil['Magnitude'].max())
-    
-    if st.session_state.get('data_source') != selected_file_name:
+
+    if min_mag >= max_mag:
+        st.info(f"Semua gempa yang ditampilkan memiliki Magnitudo {min_mag}. Filter magnitudo nonaktif.")
+        mag_filter_values = (min_mag, max_mag)
         st.session_state.pop('mag_filter', None)
+    else:
+        if st.session_state.get('data_source') != selected_file_name:
+            st.session_state.pop('mag_filter', None)
+        
         st.session_state.data_source = selected_file_name
+        
+        current_filter_value = st.session_state.get('mag_filter', (min_mag, max_mag))
 
-    current_filter_value = st.session_state.get('mag_filter', (min_mag, max_mag))
-    
-    if not (min_mag <= current_filter_value[0] <= max_mag and min_mag <= current_filter_value[1] <= max_mag):
-        current_filter_value = (min_mag, max_mag)
-    # --- AKHIR FIX #2 ---
+        if not (min_mag <= current_filter_value[0] <= max_mag and min_mag <= current_filter_value[1] <= max_mag):
+            current_filter_value = (min_mag, max_mag)
 
-    filter_col1, filter_col2 = st.columns([3, 1])
-    with filter_col1:
-        mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
-        st.session_state.mag_filter = mag_filter_values
-    with filter_col2:
-        st.write("")
-        if st.button("Reset Filter"):
-            st.session_state.mag_filter = (min_mag, max_mag)
-            st.rerun()
+        filter_col1, filter_col2 = st.columns([3, 1])
+        with filter_col1:
+            mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
+            st.session_state.mag_filter = mag_filter_values
+        with filter_col2:
+            st.write("")
+            if st.button("Reset Filter"):
+                st.session_state.mag_filter = (min_mag, max_mag)
+                st.rerun()
+ 
     
     df_filtered = df_tampil[
         (df_tampil['Magnitude'].between(*mag_filter_values)) &
@@ -258,3 +264,4 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
