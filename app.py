@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 6.1 (Reset Filter Stabil)
+# PUSAT INFORMASI GEMPA BUMI - Versi 6.0 (Heatmap & Shakemap Integration)
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
 # ======================================================================================
 
@@ -33,7 +33,7 @@ DATA_SOURCES = {
     "Gempa Terbaru M 5.0+": "gempaterkini.json",
     "Gempa Real-time (Otomatis)": "autogempa.json"
 }
-APP_VERSION = "6.1"
+APP_VERSION = "6.0"
 
 # ---------------------------------------------------------------------
 # Bagian 2: Fungsi-fungsi Bantuan
@@ -45,8 +45,31 @@ def get_color_from_magnitude(magnitude):
     else: return 'red'
 
 def display_realtime_clock():
-    # Fungsi ini tidak berubah
-    html_code = """<div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';"><div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">WIB</span><h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div><div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">UTC</span><h2 id="utc-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div></div><script>function updateTime() {const wibTimeElement = document.getElementById('wib-time');const utcTimeElement = document.getElementById('utc-time');if (!wibTimeElement || !utcTimeElement) return;const wibDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));const wibHours = String(wibDate.getHours()).padStart(2, '0');const wibMinutes = String(wibDate.getMinutes()).padStart(2, '0');const wibSeconds = String(wibDate.getSeconds()).padStart(2, '0');const utcDate = new Date();const utcHours = String(utcDate.getUTCHours()).padStart(2, '0');const utcMinutes = String(utcDate.getUTCMinutes()).padStart(2, '0');const utcSeconds = String(utcDate.getUTCSeconds()).padStart(2, '0');wibTimeElement.innerHTML = `${wibHours}:${wibMinutes}:${wibSeconds}`;utcTimeElement.innerHTML = `${utcHours}:${utcMinutes}:${utcSeconds}`;}setInterval(updateTime, 1000);updateTime();</script>"""
+    html_code = """
+        <div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';">
+            <div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">WIB</span><h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div>
+            <div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">UTC</span><h2 id="utc-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div>
+        </div>
+        <script>
+            function updateTime() {
+                const wibTimeElement = document.getElementById('wib-time');
+                const utcTimeElement = document.getElementById('utc-time');
+                if (!wibTimeElement || !utcTimeElement) return;
+                const wibDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+                const wibHours = String(wibDate.getHours()).padStart(2, '0');
+                const wibMinutes = String(wibDate.getMinutes()).padStart(2, '0');
+                const wibSeconds = String(wibDate.getSeconds()).padStart(2, '0');
+                const utcDate = new Date();
+                const utcHours = String(utcDate.getUTCHours()).padStart(2, '0');
+                const utcMinutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
+                const utcSeconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
+                wibTimeElement.innerHTML = ${wibHours}:${wibMinutes}:${wibSeconds};
+                utcTimeElement.innerHTML = ${utcHours}:${utcMinutes}:${utcSeconds};
+            }
+            setInterval(updateTime, 1000);
+            updateTime();
+        </script>
+    """
     components.html(html_code, height=75)
 
 # ---------------------------------------------------------------------
@@ -64,6 +87,7 @@ def get_data_gempa(file_name):
         df = pd.DataFrame([gempa_data_raw] if isinstance(gempa_data_raw, dict) else gempa_data_raw)
         if df.empty: return pd.DataFrame()
 
+        df['DateTime'] = pd.to_datetime(df.get('DateTime'), errors='coerce')
         if 'Coordinates' in df.columns:
             coords = df['Coordinates'].str.split(',', expand=True)
             df['Latitude'] = pd.to_numeric(coords[0], errors='coerce')
@@ -80,7 +104,7 @@ def get_data_gempa(file_name):
         else:
             df['ShakemapURL'] = None
             
-        df['DateTime'] = pd.to_datetime(df.get('DateTime'), errors='coerce')
+        df['Waktu Kejadian'] = df['DateTime'].dt.strftime('%Y-%m-%d %H:%M:%S')
         df.dropna(subset=['DateTime', 'Latitude', 'Longitude', 'Magnitude'], inplace=True)
         return df
         
@@ -93,14 +117,14 @@ def get_data_gempa(file_name):
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
     st.caption("Mahasiswa S1 Sistem Informasi UPNVJ Angkatan 2024")
-    st.image("adam_dorman_profile.jpg", use_column_width=True, caption="Adam Dorman - 2025")
+    st.image("adam_dorman_profile.jpg", use_container_width=True, caption="Adam Dorman - 2025")
     st.markdown("""
     - [LinkedIn](https://www.linkedin.com/in/adamdorman68/) 
     - [GitHub](https://github.com/adamdorman468-collab)
     - [Instagram](https://www.instagram.com/adam_abu_umar?igsh=OGQ5ZDc2ODk2ZA==)
     """)
     st.divider()
-    st.title("⚙️ Kontrol & Pengaturan")
+    st.title("⚙ Kontrol & Pengaturan")
     
     selected_data_name = st.selectbox("Pilih Sumber Data:", options=list(DATA_SOURCES.keys()))
     selected_file_name = DATA_SOURCES[selected_data_name]
@@ -128,21 +152,22 @@ with st.sidebar:
     st.divider()
     st.markdown("#### Opsi Peta")
     use_clustering = st.checkbox("Kelompokkan gempa (clustering)", value=True)
+    # --- FITUR BARU: Kontrol Heatmap & Shakemap ---
     show_heatmap = st.checkbox("Tampilkan Heatmap", value=False)
     show_shakemap = st.checkbox("Tampilkan Shakemap BMKG (jika ada)", value=False)
     
     st.divider()
     st.markdown("#### Informasi Tambahan")
-    st.markdown("- **[Info Gempa BMKG](https://www.bmkg.go.id/gempabumi/gempabumi-dirasakan.bmkg)**")
-    st.markdown("- **[Skala MMI](https://www.bmkg.go.id/gempabumi/skala-mmi.bmkg)**")
+    st.markdown("- *[Info Gempa BMKG](https://www.bmkg.go.id/gempabumi/gempabumi-dirasakan.bmkg)*")
+    st.markdown("- *[Skala MMI](https://www.bmkg.go.id/gempabumi/skala-mmi.bmkg)*") # <-- FITUR BARU
     st.markdown("---")
-    st.markdown("**Legenda Warna Peta:**")
+    st.markdown("*Legenda Warna Peta:*")
     st.markdown("<span style='color:green'>🟢</span> M < 4.0", unsafe_allow_html=True)
     st.markdown("<span style='color:orange'>🟠</span> 4.0 ≤ M < 6.0", unsafe_allow_html=True)
     st.markdown("<span style='color:red'>🔴</span> M ≥ 6.0", unsafe_allow_html=True)
 
     st.divider()
-    st.markdown(f"**🌋 Versi Aplikasi: {APP_VERSION}**")
+    st.markdown(f"🌋 Versi Aplikasi: {APP_VERSION}")
 
 # ---------------------------------------------------------------------
 # Bagian 5: Tampilan Utama Aplikasi
@@ -150,11 +175,11 @@ with st.sidebar:
 col1, col2 = st.columns([3, 2])
 with col1:
     st.title("🌋 Pusat Informasi Gempa Indonesia")
-    st.markdown(f"**{datetime.now(timezone(timedelta(hours=7))).strftime('%A, %d %B %Y')}**")
+    st.markdown(f"{datetime.now(timezone(timedelta(hours=7))).strftime('%A, %d %B %Y')}")
 with col2:
     display_realtime_clock()
 
-st.markdown(f"Menampilkan: **{selected_data_name}** | Sumber: [API Publik BMKG](https://data.bmkg.go.id/)")
+st.markdown(f"Menampilkan: *{selected_data_name}* | Sumber: [API Publik BMKG](https://data.bmkg.go.id/)")
 st.divider()
 
 df_gempa = get_data_gempa(selected_file_name)
@@ -164,42 +189,22 @@ if not df_gempa.empty:
     
     min_mag, max_mag = float(df_tampil['Magnitude'].min()), float(df_tampil['Magnitude'].max())
     
-    # --- PERBAIKAN TOTAL LOGIKA FILTER & RESET ---
-    
-    # 1. Cek dulu apakah tombol reset di-klik
-    reset_clicked = st.button("Reset Filter Magnitudo")
-    if reset_clicked:
-        # Jika di-klik, hapus state lama dan jalankan ulang
-        st.session_state.pop('mag_filter', None)
-        st.rerun()
-
-    # 2. Tentukan nilai untuk slider
-    # Cek apakah sumber data berubah, jika ya, hapus state lama
-    if st.session_state.get('data_source') != selected_file_name:
-        st.session_state.pop('mag_filter', None)
-        st.session_state.data_source = selected_file_name
-    
-    # Ambil nilai dari state, atau default ke rentang penuh
-    current_filter_value = st.session_state.get('mag_filter', (min_mag, max_mag))
-    
-    # Validasi terakhir untuk mencegah crash
-    if not (min_mag <= current_filter_value[0] <= max_mag and min_mag <= current_filter_value[1] <= max_mag):
-        current_filter_value = (min_mag, max_mag)
-
-    # 3. Buat slider dan simpan nilainya kembali ke state
-    if min_mag < max_mag:
-        mag_filter_values = st.slider(
-            "Saring berdasarkan Magnitudo:",
-            min_value=min_mag,
-            max_value=max_mag,
-            value=current_filter_value
-        )
-        st.session_state.mag_filter = mag_filter_values
-    else:
-        st.info(f"Semua gempa memiliki Magnitudo {min_mag}. Filter nonaktif.")
+    if min_mag >= max_mag:
         mag_filter_values = (min_mag, max_mag)
+    else:
+        if st.session_state.get('data_source') != selected_file_name: st.session_state.pop('mag_filter', None)
+        st.session_state.data_source = selected_file_name
+        current_filter_value = st.session_state.get('mag_filter', (min_mag, max_mag))
+        if not (min_mag <= current_filter_value[0] <= max_mag and min_mag <= current_filter_value[1] <= max_mag):
+            current_filter_value = (min_mag, max_mag)
         
-    # --- AKHIR PERBAIKAN ---
+        filter_col1, filter_col2 = st.columns([3, 1])
+        with filter_col1:
+            mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
+            st.session_state.mag_filter = mag_filter_values
+        with filter_col2:
+            st.write(""); 
+            if st.button("Reset Filter"): st.session_state.mag_filter = (min_mag, max_mag); st.rerun()
 
     df_filtered = df_tampil[
         (df_tampil['Magnitude'].between(*mag_filter_values)) &
@@ -219,6 +224,9 @@ if not df_gempa.empty:
             map_center = [gempa_terbaru['Latitude'], gempa_terbaru['Longitude']]
             m = folium.Map(location=map_center, zoom_start=5)
             
+            # --- FITUR BARU: Logika Layer Peta ---
+            
+            # 1. Layer Marker (tetap ada)
             if use_clustering:
                 marker_layer = MarkerCluster(name="Gempa (Cluster)").add_to(m)
             else:
@@ -233,14 +241,17 @@ if not df_gempa.empty:
                     icon=folium.Icon(color=get_color_from_magnitude(row['Magnitude']))
                 ).add_to(marker_layer)
             
+            # 2. Layer Heatmap (jika diaktifkan)
             if show_heatmap:
                 heat_data = [[row['Latitude'], row['Longitude']] for _, row in df_filtered.iterrows()]
                 HeatMap(heat_data, name="Heatmap Kepadatan").add_to(m)
 
+            # 3. Layer Shakemap (jika diaktifkan & tersedia)
             if show_shakemap:
                 shakemap_candidate = df_filtered[df_filtered['ShakemapURL'].notna()].iloc[0] if not df_filtered[df_filtered['ShakemapURL'].notna()].empty else None
                 if shakemap_candidate is not None:
                     lat, lon, mag = shakemap_candidate['Latitude'], shakemap_candidate['Longitude'], shakemap_candidate['Magnitude']
+                    # Heuristik bounds yang simpel
                     delta = 0.1 * (1.8 ** mag) / 2
                     bounds = [[lat - delta, lon - delta], [lat + delta, lon + delta]]
                     try:
@@ -251,6 +262,7 @@ if not df_gempa.empty:
                     except Exception as e:
                         st.warning(f"Gagal menampilkan overlay Shakemap: {e}")
 
+            # Selalu tambahkan kontrol layer
             folium.LayerControl().add_to(m)
             
             st_folium(m, width='100%', height=500, returned_objects=[])
@@ -263,4 +275,4 @@ if not df_gempa.empty:
     else:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
-    st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+    st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
