@@ -35,6 +35,15 @@ APP_VERSION = "8.0"
 # ---------------------------------------------------------------------
 # Bagian 2: Fungsi Bantu
 # ---------------------------------------------------------------------
+def get_color_from_magnitude(magnitude):
+    try:
+        m = float(magnitude)
+        if m < 4.0: return 'green'
+        if m < 6.0: return 'orange'
+        return 'red'
+    except (ValueError, TypeError):
+        return 'gray'
+
 @st.cache_data(ttl=60)
 def get_data_gempa(file_name):
     url = f"{BMKG_API_BASE_URL}{file_name}"
@@ -249,3 +258,4 @@ else:
             c2.markdown("#### Distribusi Kedalaman (km)")
             depth_counts = pd.cut(df_filtered['KedalamanValue'], bins=[-1, 70, 300, 800], labels=["Dangkal (< 70)", "Menengah (70-300)", "Dalam (> 300)"]).value_counts().sort_index()
             st.bar_chart(depth_counts)
+
