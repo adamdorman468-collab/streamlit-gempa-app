@@ -119,8 +119,11 @@ def get_data_gempa(file_name):
 # ---------------------------------------------------------------------
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
-    st.image("adam_dorman_profile.jpg", use_column_width=True, caption="Adam Dorman")
-    st.markdown("[LinkedIn](https://www.linkedin.com/in/adamdorman68/) | [GitHub](https://github.com/adamdorman468-collab)")
+    st.image("adam_dorman_profile.jpg", use_container_width=True, caption="Adam Dorman")
+    st.markdown("""
+    - [LinkedIn](https://www.linkedin.com/in/adamdorman68/) 
+    - [GitHub](https://github.com/adamdorman468-collab)""")
+    st.caption("Mahasiswa S1 Sistem Informasi UPNVJ - Angkatan 2024")
     st.divider()
     st.title("⚙️ Kontrol & Pengaturan")
     
@@ -274,3 +277,4 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
