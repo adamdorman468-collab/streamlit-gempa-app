@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 5.1 
+# PUSAT INFORMASI GEMPA BUMI - Versi 5.2 (Perbaikan Stabilitas)
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
 # ======================================================================================
 
@@ -149,8 +149,9 @@ with st.sidebar:
         "Urutkan Data Tabel Berdasarkan:",
         ("Waktu Terbaru", "Magnitudo Terkuat", "Paling Dangkal")
     )
-
-    if not df_for_filters.empty:
+    
+    # --- PERBAIKAN DIMULAI DI SINI ---
+    if not df_for_filters.empty and not df_for_filters['KedalamanValue'].dropna().empty:
         st.divider()
         st.write("**Filter Kedalaman (km)**")
         min_depth = int(df_for_filters['KedalamanValue'].min())
@@ -160,7 +161,11 @@ with st.sidebar:
             min_value=min_depth, max_value=max_depth,
             value=(min_depth, max_depth)
         )
-    
+    else:
+        # Jika data kosong, buat variabel default agar aplikasi tidak crash
+        depth_filter_values = (0, 700) # Nilai default mencakup semua kemungkinan kedalaman
+    # --- PERBAIKAN SELESAI ---
+
     st.divider()
     use_clustering = st.checkbox("Kelompokkan gempa di peta (clustering)", value=True, help="Aktifkan untuk performa lebih baik saat data banyak.")
 
@@ -175,8 +180,9 @@ with st.sidebar:
     st.markdown("<span style='color:red'>🔴</span> Magnitudo ≥ 6.0", unsafe_allow_html=True)
     
     st.divider()
-    APP_VERSION = "5.1"
+    APP_VERSION = "5.2" # Versi dinaikkan
     st.markdown(f"**🌋 Versi Aplikasi: {APP_VERSION}**")
+
 # ---------------------------------------------------------------------
 # Bagian 5: Tampilan Utama Aplikasi
 # ---------------------------------------------------------------------
@@ -271,4 +277,3 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
-
