@@ -45,6 +45,7 @@ def get_color_from_magnitude(magnitude):
     else: return 'red'
 
 def display_realtime_clock():
+    # ... (Fungsi ini tidak berubah)
     html_code = """
         <div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';">
             <div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">WIB</span><h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div>
@@ -63,8 +64,8 @@ def display_realtime_clock():
                 const utcHours = String(utcDate.getUTCHours()).padStart(2, '0');
                 const utcMinutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
                 const utcSeconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
-                wibTimeElement.innerHTML = ${wibHours}:${wibMinutes}:${wibSeconds};
-                utcTimeElement.innerHTML = ${utcHours}:${utcMinutes}:${utcSeconds};
+                wibTimeElement.innerHTML = `${wibHours}:${wibMinutes}:${wibSeconds}`;
+                utcTimeElement.innerHTML = `${utcHours}:${utcMinutes}:${utcSeconds}`;
             }
             setInterval(updateTime, 1000);
             updateTime();
@@ -87,6 +88,7 @@ def get_data_gempa(file_name):
         df = pd.DataFrame([gempa_data_raw] if isinstance(gempa_data_raw, dict) else gempa_data_raw)
         if df.empty: return pd.DataFrame()
 
+        # Data Cleaning yang lebih tangguh
         df['DateTime'] = pd.to_datetime(df.get('DateTime'), errors='coerce')
         if 'Coordinates' in df.columns:
             coords = df['Coordinates'].str.split(',', expand=True)
@@ -99,6 +101,7 @@ def get_data_gempa(file_name):
         else:
             df['KedalamanValue'] = 0
 
+        # --- FITUR BARU: Parsing URL Shakemap ---
         if 'Shakemap' in df.columns:
             df['ShakemapURL'] = df['Shakemap'].apply(lambda x: f"https://data.bmkg.go.id/DataMKG/TEWS/{x}" if isinstance(x, str) and x.endswith('.jpg') else None)
         else:
@@ -116,15 +119,10 @@ def get_data_gempa(file_name):
 # ---------------------------------------------------------------------
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
-    st.caption("Mahasiswa S1 Sistem Informasi UPNVJ Angkatan 2024")
-    st.image("adam_dorman_profile.jpg", use_container_width=True, caption="Adam Dorman - 2025")
-    st.markdown("""
-    - [LinkedIn](https://www.linkedin.com/in/adamdorman68/) 
-    - [GitHub](https://github.com/adamdorman468-collab)
-    - [Instagram](https://www.instagram.com/adam_abu_umar?igsh=OGQ5ZDc2ODk2ZA==)
-    """)
+    st.image("adam_dorman_profile.jpg", use_column_width=True, caption="Adam Dorman")
+    st.markdown("[LinkedIn](https://www.linkedin.com/in/adamdorman68/) | [GitHub](https://github.com/adamdorman468-collab)")
     st.divider()
-    st.title("⚙ Kontrol & Pengaturan")
+    st.title("⚙️ Kontrol & Pengaturan")
     
     selected_data_name = st.selectbox("Pilih Sumber Data:", options=list(DATA_SOURCES.keys()))
     selected_file_name = DATA_SOURCES[selected_data_name]
@@ -158,16 +156,16 @@ with st.sidebar:
     
     st.divider()
     st.markdown("#### Informasi Tambahan")
-    st.markdown("- *[Info Gempa BMKG](https://www.bmkg.go.id/gempabumi/gempabumi-dirasakan.bmkg)*")
-    st.markdown("- *[Skala MMI](https://www.bmkg.go.id/gempabumi/skala-mmi.bmkg)*") # <-- FITUR BARU
+    st.markdown("- **[Info Gempa BMKG](https://www.bmkg.go.id/gempabumi/gempabumi-dirasakan.bmkg)**")
+    st.markdown("- **[Skala MMI](https://www.bmkg.go.id/gempabumi/skala-mmi.bmkg)**") # <-- FITUR BARU
     st.markdown("---")
-    st.markdown("*Legenda Warna Peta:*")
+    st.markdown("**Legenda Warna Peta:**")
     st.markdown("<span style='color:green'>🟢</span> M < 4.0", unsafe_allow_html=True)
     st.markdown("<span style='color:orange'>🟠</span> 4.0 ≤ M < 6.0", unsafe_allow_html=True)
     st.markdown("<span style='color:red'>🔴</span> M ≥ 6.0", unsafe_allow_html=True)
 
     st.divider()
-    st.markdown(f"🌋 Versi Aplikasi: {APP_VERSION}")
+    st.markdown(f"**🌋 Versi Aplikasi: {APP_VERSION}**")
 
 # ---------------------------------------------------------------------
 # Bagian 5: Tampilan Utama Aplikasi
@@ -175,11 +173,11 @@ with st.sidebar:
 col1, col2 = st.columns([3, 2])
 with col1:
     st.title("🌋 Pusat Informasi Gempa Indonesia")
-    st.markdown(f"{datetime.now(timezone(timedelta(hours=7))).strftime('%A, %d %B %Y')}")
+    st.markdown(f"**{datetime.now(timezone(timedelta(hours=7))).strftime('%A, %d %B %Y')}**")
 with col2:
     display_realtime_clock()
 
-st.markdown(f"Menampilkan: *{selected_data_name}* | Sumber: [API Publik BMKG](https://data.bmkg.go.id/)")
+st.markdown(f"Menampilkan: **{selected_data_name}** | Sumber: [API Publik BMKG](https://data.bmkg.go.id/)")
 st.divider()
 
 df_gempa = get_data_gempa(selected_file_name)
@@ -275,4 +273,4 @@ if not df_gempa.empty:
     else:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
-    st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+    st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
