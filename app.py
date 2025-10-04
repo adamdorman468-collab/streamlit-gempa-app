@@ -208,26 +208,29 @@ df_gempa = get_data_gempa(selected_file_name)
 if not df_gempa.empty:
     df_tampil = df_gempa.copy()
     
-    min_mag, max_mag = float(df_tampil['Magnitude'].min()), float(df_tampil['Magnitude'].max())
-    
+   min_mag, max_mag = float(df_tampil['Magnitude'].min()), float(df_tampil['Magnitude'].max())
+
+    # --- PERBAIKAN LOGIKA RESET FILTER MAGNITUDO ---
+    # Cek apakah sumber data telah berubah
     if st.session_state.get('data_source') != selected_file_name:
-        st.session_state.mag_filter = (min_mag, max_mag)
+        # Jika berubah, hapus nilai filter lama dan simpan sumber data baru
+        st.session_state.pop('mag_filter', None)
         st.session_state.data_source = selected_file_name
-    if 'mag_filter' not in st.session_state:
-        st.session_state.mag_filter = (min_mag, max_mag)
+
+    # Dapatkan nilai filter dari session state, atau gunakan rentang penuh jika tidak ada
+    current_filter_value = st.session_state.get('mag_filter', (min_mag, max_mag))
+
+    # Pastikan nilai filter lama valid untuk rentang baru, jika tidak, reset
+    if not (min_mag <= current_filter_value[0] <= max_mag and min_mag <= current_filter_value[1] <= max_mag):
+        current_filter_value = (min_mag, max_mag)
+    # --- PERBAIKAN SELESAI ---
 
     filter_col1, filter_col2 = st.columns([3, 1])
     with filter_col1:
-        current_filter_value = st.session_state.mag_filter
-        if not (min_mag <= current_filter_value[0] <= max_mag and min_mag <= current_filter_value[1] <= max_mag):
-            current_filter_value = (min_mag, max_mag)
+        # Buat slider dengan nilai yang sudah dijamin valid
         mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
+        # Simpan nilai slider terbaru ke session state
         st.session_state.mag_filter = mag_filter_values
-    with filter_col2:
-        st.write("")
-        if st.button("Reset Filter"):
-            st.session_state.mag_filter = (min_mag, max_mag)
-            st.rerun()
     
     # Menerapkan semua filter
     df_filtered = df_tampil[
@@ -284,5 +287,6 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
 
 
