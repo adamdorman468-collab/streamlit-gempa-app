@@ -45,7 +45,6 @@ def get_color_from_magnitude(magnitude):
     else: return 'red'
 
 def display_realtime_clock():
-    # ... (Fungsi ini tidak berubah)
     html_code = """
         <div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';">
             <div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">WIB</span><h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div>
@@ -88,7 +87,6 @@ def get_data_gempa(file_name):
         df = pd.DataFrame([gempa_data_raw] if isinstance(gempa_data_raw, dict) else gempa_data_raw)
         if df.empty: return pd.DataFrame()
 
-        # Data Cleaning yang lebih tangguh
         df['DateTime'] = pd.to_datetime(df.get('DateTime'), errors='coerce')
         if 'Coordinates' in df.columns:
             coords = df['Coordinates'].str.split(',', expand=True)
@@ -101,7 +99,6 @@ def get_data_gempa(file_name):
         else:
             df['KedalamanValue'] = 0
 
-        # --- FITUR BARU: Parsing URL Shakemap ---
         if 'Shakemap' in df.columns:
             df['ShakemapURL'] = df['Shakemap'].apply(lambda x: f"https://data.bmkg.go.id/DataMKG/TEWS/{x}" if isinstance(x, str) and x.endswith('.jpg') else None)
         else:
@@ -119,7 +116,8 @@ def get_data_gempa(file_name):
 # ---------------------------------------------------------------------
 with st.sidebar:
     st.title("👨‍💻 Tentang Author")
-    st.image("adam_dorman_profile.jpg", use_column_width=True, caption="Adam Dorman")
+    st.caption("Mahasiswa S1 Sistem Informasi UPNVJ Angkatan 2024")
+    st.image("adam_dorman_profile.jpg", use_container_width=True, caption="Adam Dorman")
     st.markdown("[LinkedIn](https://www.linkedin.com/in/adamdorman68/) | [GitHub](https://github.com/adamdorman468-collab)")
     st.divider()
     st.title("⚙️ Kontrol & Pengaturan")
@@ -274,3 +272,4 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
