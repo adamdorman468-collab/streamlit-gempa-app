@@ -1,5 +1,5 @@
 # ======================================================================================
-# PUSAT INFORMASI GEMPA BUMI - Versi 8.1 (Clock & UI Tweak)
+# PUSAT INFORMASI GEMPA BUMI - Versi 9.0 (Definitif & Lengkap)
 # Dibuat oleh: Adam Dorman (Mahasiswa S1 Sistem Informasi UPNVJ)
 # ======================================================================================
 
@@ -28,7 +28,7 @@ DATA_SOURCES = {
     "Gempa Terbaru M 5.0+": "gempaterkini.json",
     "Gempa Real-time (Otomatis)": "autogempa.json"
 }
-APP_VERSION = "8.1"
+APP_VERSION = "9.0"
 
 # ---------------------------------------------------------------------
 # Bagian 2: Fungsi Bantu
@@ -43,37 +43,7 @@ def get_color_from_magnitude(magnitude):
         return 'gray'
 
 def display_realtime_clock():
-    html_code = """
-        <div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';">
-            <div style="text-align: center;">
-                <span style="font-size: 1rem; color: #A0A0A0;">WIB</span>
-                <h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2>
-            </div>
-            <div style="text-align: center;">
-                <span style="font-size: 1rem; color: #A0A0A0;">UTC</span>
-                <h2 id="utc-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2>
-            </div>
-        </div>
-        <script>
-            function updateTime() {
-                const wibTimeElement = document.getElementById('wib-time');
-                const utcTimeElement = document.getElementById('utc-time');
-                if (!wibTimeElement || !utcTimeElement) return;
-                const wibDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
-                const wibHours = String(wibDate.getHours()).padStart(2, '0');
-                const wibMinutes = String(wibDate.getMinutes()).padStart(2, '0');
-                const wibSeconds = String(wibDate.getSeconds()).padStart(2, '0');
-                const utcDate = new Date();
-                const utcHours = String(utcDate.getUTCHours()).padStart(2, '0');
-                const utcMinutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
-                const utcSeconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
-                wibTimeElement.innerHTML = `${wibHours}:${wibMinutes}:${wibSeconds}`;
-                utcTimeElement.innerHTML = `${utcHours}:${utcMinutes}:${utcSeconds}`;
-            }
-            setInterval(updateTime, 1000);
-            updateTime();
-        </script>
-    """
+    html_code = """<div id="clock-container" style="display: flex; justify-content: space-between; font-family: 'Segoe UI', 'Roboto', 'sans-serif';"><div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">WIB</span><h2 id="wib-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div><div style="text-align: center;"><span style="font-size: 1rem; color: #A0A0A0;">UTC</span><h2 id="utc-time" style="margin: 0; color: #FFFFFF; font-size: 2.5rem; font-weight: 700;">--:--:--</h2></div></div><script>function updateTime() {const wibTimeElement = document.getElementById('wib-time');const utcTimeElement = document.getElementById('utc-time');if (!wibTimeElement || !utcTimeElement) return;const wibDate = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));const wibHours = String(wibDate.getHours()).padStart(2, '0');const wibMinutes = String(wibDate.getMinutes()).padStart(2, '0');const wibSeconds = String(wibDate.getSeconds()).padStart(2, '0');const utcDate = new Date();const utcHours = String(utcDate.getUTCHours()).padStart(2, '0');const utcMinutes = String(utcDate.getUTCMinutes()).padStart(2, '0');const utcSeconds = String(utcDate.getUTCSeconds()).padStart(2, '0');wibTimeElement.innerHTML = `${wibHours}:${wibMinutes}:${wibSeconds}`;utcTimeElement.innerHTML = `${utcHours}:${utcMinutes}:${utcSeconds}`;}setInterval(updateTime, 1000);updateTime();</script>"""
     components.html(html_code, height=75)
 
 @st.cache_data(ttl=60)
@@ -87,7 +57,6 @@ def get_data_gempa(file_name):
         df = pd.DataFrame([gempa_data_raw] if isinstance(gempa_data_raw, dict) else gempa_data_raw)
         if df.empty: return pd.DataFrame()
 
-        df['DateTime'] = pd.to_datetime(df.get('DateTime'), errors='coerce')
         if 'Coordinates' in df.columns:
             coords = df['Coordinates'].str.split(',', expand=True)
             df['Latitude'] = pd.to_numeric(coords.get(0), errors='coerce')
@@ -102,6 +71,7 @@ def get_data_gempa(file_name):
         if 'Shakemap' in df.columns:
             df['ShakemapURL'] = df['Shakemap'].apply(lambda x: f"https://data.bmkg.go.id/DataMKG/TEWS/{x}" if isinstance(x, str) and x.endswith('.jpg') else None)
         
+        df['DateTime'] = pd.to_datetime(df.get('DateTime'), errors='coerce')
         df.dropna(subset=['DateTime', 'Latitude', 'Longitude', 'Magnitude'], inplace=True)
         return df
     except Exception:
@@ -171,18 +141,32 @@ with st.sidebar:
     show_heatmap = st.checkbox("Tampilkan Heatmap", value=False)
     show_shakemap = st.checkbox("Tampilkan Shakemap BMKG", value=False)
     
+    # --- FITUR DIKEMBALIKAN ---
+    st.divider()
+    st.markdown("#### Informasi Tambahan")
+    st.markdown("- **[Info Gempa BMKG](https://www.bmkg.go.id/gempabumi/gempabumi-dirasakan.bmkg)**")
+    st.markdown("- **[Skala MMI](https://www.bmkg.go.id/gempabumi/skala-mmi.bmkg)**")
+    st.markdown("---")
+    st.markdown("**Legenda Warna Peta:**")
+    st.markdown("<span style='color:green'>🟢</span> M < 4.0", unsafe_allow_html=True)
+    st.markdown("<span style='color:orange'>🟠</span> 4.0 ≤ M < 6.0", unsafe_allow_html=True)
+    st.markdown("<span style='color:red'>🔴</span> M ≥ 6.0", unsafe_allow_html=True)
+    
     st.divider()
     st.markdown(f"**🌋 Versi Aplikasi: {APP_VERSION}**")
 
 # ---------------------------------------------------------------------
 # Bagian 4: Tampilan Utama
 # ---------------------------------------------------------------------
+# --- FITUR DIKEMBALIKAN: Tampilan Header dengan Tanggal & Jam ---
 header_col1, header_col2 = st.columns([2, 1])
 with header_col1:
     st.title("🌋 Pusat Informasi Gempa Indonesia")
-    st.caption(f"Menampilkan: **{selected_data_name}** | Sumber: [API Publik BMKG](https://data.bmkg.go.id/)")
+    st.markdown(f"**{datetime.now(timezone(timedelta(hours=7))).strftime('%A, %d %B %Y')}**")
 with header_col2:
-    display_realtime_clock() # Jam otomatis dikembalikan
+    display_realtime_clock()
+
+st.caption(f"Menampilkan: **{selected_data_name}** | Sumber: [API Publik BMKG](https://data.bmkg.go.id/)")
 st.divider()
 
 df_gempa = get_data_gempa(selected_file_name)
@@ -215,9 +199,9 @@ else:
 
         with tab1:
             map_center = [df_filtered['Latitude'].mean(), df_filtered['Longitude'].mean()]
-            m = folium.Map(location=map_center, zoom_start=5, tiles="CartoDB positron") # Tema peta di-set ke Light
+            m = folium.Map(location=map_center, zoom_start=5, tiles="CartoDB positron")
             
-            marker_group = folium.FeatureGroup(name="Gempa").add_to(m)
+            marker_group = folium.FeatureGroup(name="Gempa", show=True).add_to(m)
             heat_group = folium.FeatureGroup(name="Heatmap", show=False).add_to(m)
             shake_group = folium.FeatureGroup(name="Shakemap BMKG", show=False).add_to(m)
             
