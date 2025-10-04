@@ -63,8 +63,11 @@ def display_realtime_clock():
                 const utcHours = String(utcDate.getUTCHours()).padStart(2, '0');
                 const utcMinutes = String(utcDate.getUTCMinutes()).padStart(2, '0');
                 const utcSeconds = String(utcDate.getUTCSeconds()).padStart(2, '0');
-                wibTimeElement.innerHTML = `{wibHours}:${wibMinutes}:${wibSeconds}`;
-                utcTimeElement.innerHTML = `{utcHours}:${utcMinutes}:${utcSeconds}`;
+                
+                // --- PERBAIKAN DI SINI ---
+                wibTimeElement.innerHTML = `${wibHours}:${wibMinutes}:${wibSeconds}`;
+                utcTimeElement.innerHTML = `${utcHours}:${utcMinutes}:${utcSeconds}`;
+                // --- AKHIR PERBAIKAN ---
             }
             setInterval(updateTime, 1000);
             updateTime();
@@ -276,4 +279,5 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
 
