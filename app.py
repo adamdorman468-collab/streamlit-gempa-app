@@ -118,9 +118,11 @@ with st.sidebar:
     st.title("👨‍💻 Tentang Author")
     st.caption("Mahasiswa S1 Sistem Informasi UPNVJ Angkatan 2024")
     st.image("adam_dorman_profile.jpg", use_container_width=True, caption="Adam Dorman - 2025")
-    st.markdown(
-    "- [LinkedIn](https://www.linkedin.com/in/adamdorman68/) 
-    "- [GitHub](https://github.com/adamdorman468-collab)")
+    st.markdown("""
+    - [LinkedIn](https://www.linkedin.com/in/adamdorman68/) 
+    - [GitHub](https://github.com/adamdorman468-collab)
+    - [Instagram](https://www.instagram.com/adam_abu_umar?igsh=OGQ5ZDc2ODk2ZA==)
+    """)
     st.divider()
     st.title("⚙️ Kontrol & Pengaturan")
     
@@ -274,6 +276,7 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
 
 
 
