@@ -208,9 +208,6 @@ if not df_gempa.empty:
             mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
             st.session_state.mag_filter = mag_filter_values
             
-    mag_filter_values = st.slider("Saring berdasarkan Magnitudo:", min_value=min_mag, max_value=max_mag, value=current_filter_value)
-    st.session_state.mag_filter = mag_filter_values
-
     df_filtered = df_tampil[
         (df_tampil['Magnitude'].between(*mag_filter_values)) &
         (df_tampil['KedalamanValue'].between(*depth_filter_values))
@@ -281,6 +278,7 @@ if not df_gempa.empty:
         st.warning("Tidak ada data yang sesuai dengan filter Anda.")
 else:
     st.error("Gagal memuat data dari BMKG. Silakan coba refresh atau pilih sumber data lain.")
+
 
 
 
